@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Extracción de Comprobantes - Top Neumaticos</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --border: #2a2e37;
+    --accent: #4f8cff;
+    --accent-hover: #3d76e0;
+    --text: #e6e8ec;
+    --muted: #8a8f9a;
+    --ok: #3ecf8e;
+    --err: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    padding: 24px;
+  }
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 4px 0;
+  }
+  p.sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 24px 0;
+  }
+  .dropzone {
+    border: 2px dashed var(--border);
+    border-radius: 12px;
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .dropzone.dragover {
+    border-color: var(--accent);
+    background: rgba(79, 140, 255, 0.06);
+  }
+  .dropzone svg {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 10px;
+    color: var(--muted);
+  }
+  .dropzone .main-text {
+    font-size: 15px;
+  }
+  .dropzone .sub-text {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  #fileInput { display: none; }
+  .file-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1e222b;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+  .file-item .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 8px;
+  }
+  .file-item .remove {
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .file-item .remove:hover {
+    color: var(--err);
+    background: rgba(255, 107, 107, 0.1);
+  }
+  button#sendBtn {
+    width: 100%;
+    margin-top: 20px;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  button#sendBtn:hover:not(:disabled) { background: var(--accent-hover); }
+  button#sendBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .spinner.active { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status {
+    margin-top: 16px;
+    font-size: 13px;
+    text-align: center;
+    min-height: 18px;
+  }
+  .status.ok { color: var(--ok); }
+  .status.err { color: var(--err); }
+  .status a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .status a:hover { text-decoration: underline; }
+  .timer {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Extracción de Comprobantes</h1>
+  <p class="sub">Subí facturas, notas de crédito o resúmenes de tarjeta. Se procesan con IA y se agregan a la planilla de Gastos Financieros y Comisiones.</p>
+
+  <div class="dropzone" id="dropzone">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0-3 3m3-3 3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+    </svg>
+    <div class="main-text">Arrastrá los PDFs acá o tocá para elegir</div>
+    <div class="sub-text">Podés subir varios a la vez</div>
+  </div>
+  <input type="file" id="fileInput" accept="application/pdf" multiple>
+
+  <div class="file-list" id="fileList"></div>
+
+  <button id="sendBtn" disabled>
+    <span class="spinner" id="spinner"></span>
+    <span id="sendLabel">Procesar comprobantes</span>
+  </button>
+
+  <div class="timer" id="timer"></div>
+  <div class="status" id="status"></div>
+</div>
+
+<script>
+  // ---- CONFIG ----
+  // Mientras probás con "Listen for test event" en n8n, usá /webhook-test/...
+  // Cuando actives el workflow en producción, cambiá a /webhook/...
+  const WEBHOOK_URL = "https://envy-recollect-last.ngrok-free.dev/webhook/extraccion-facturas";
+  const SHEET_URL = "https://docs.google.com/spreadsheets/d/1BVn91RydudGZjGT2CI7Nr8VkbQYEyoHWyKHgnPOPTHc/edit#gid=0";
+  // -----------------
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileList = document.getElementById('fileList');
+  const sendBtn = document.getElementById('sendBtn');
+  const sendLabel = document.getElementById('sendLabel');
+  const spinner = document.getElementById('spinner');
+  const statusEl = document.getElementById('status');
+  const timerEl = document.getElementById('timer');
+
+  let files = [];
+  let timerInterval = null;
+
+  function renderFileList() {
+    fileList.innerHTML = '';
+    files.forEach((f, i) => {
+      const item = document.createElement('div');
+      item.className = 'file-item';
+      item.innerHTML = `<span class="name">${f.name}</span><span class="remove" data-i="${i}">✕</span>`;
+      fileList.appendChild(item);
+    });
+    sendBtn.disabled = files.length === 0;
+    fileList.querySelectorAll('.remove').forEach(el => {
+      el.addEventListener('click', () => {
+        files.splice(parseInt(el.dataset.i), 1);
+        renderFileList();
+      });
+    });
+  }
+
+  function addFiles(fileListObj) {
+    for (const f of fileListObj) {
+      if (f.type === 'application/pdf' && !files.some(existing => existing.name === f.name && existing.size === f.size)) {
+        files.push(f);
+      }
+    }
+    renderFileList();
+  }
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => addFiles(e.target.files));
+
+  ['dragenter', 'dragover'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+    });
+  });
+  dropzone.addEventListener('drop', (e) => addFiles(e.dataTransfer.files));
+
+  sendBtn.addEventListener('click', async () => {
+    if (files.length === 0) return;
+
+    sendBtn.disabled = true;
+    spinner.classList.add('active');
+    sendLabel.textContent = 'Procesando...';
+    statusEl.textContent = '';
+    statusEl.className = 'status';
+
+    const startTime = Date.now();
+    timerInterval = setInterval(() => {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+      timerEl.textContent = `${elapsed}s`;
+    }, 500);
+
+    const formData = new FormData();
+    files.forEach((f, i) => formData.append(`data${i}`, f, f.name));
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' },
+        body: formData
+      });
+
+      clearInterval(timerInterval);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      statusEl.className = 'status ok';
+      statusEl.innerHTML = `${data.mensaje || 'Procesado correctamente.'} <br><a href="${data.sheet_url || SHEET_URL}" target="_blank">Ver planilla →</a>`;
+
+      files = [];
+      renderFileList();
+    } catch (err) {
+      clearInterval(timerInterval);
+      statusEl.className = 'status err';
+      statusEl.textContent = 'Algo falló. Avisale a Fabrizio.';
+    } finally {
+      sendBtn.disabled = files.length === 0;
+      spinner.classList.remove('active');
+      sendLabel.textContent = 'Procesar comprobantes';
+    }
+  });
+</script>
+
+</body>
+</html>
